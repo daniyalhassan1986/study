@@ -16,6 +16,9 @@ export const Navbar = () => {
                     <li>
                         <Link to="/contact" className="hover:text-gray-400">Contact</Link>
                     </li>
+                    <li>
+                        <Link to="/students" className="hover:text-gray-400">Students</Link>
+                    </li>
                 </ul>
             </nav>
         </div>

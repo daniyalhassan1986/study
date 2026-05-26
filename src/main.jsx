@@ -6,6 +6,7 @@ import { Contact } from './pages/Contact.jsx'
 import { About } from './pages/About.jsx'
 import {Navbar} from './components/Navbar.jsx'
 import NotFound from './components/NotFound.jsx'
+import StudentCRUD from './pages/StudentCRUD.jsx'
 
 createRoot(document.getElementById('root')).render(
     <BrowserRouter>
@@ -14,6 +15,7 @@ createRoot(document.getElementById('root')).render(
             <Route path="/" element={<App />} />
             <Route path="/contact" element={<Contact />} />
             <Route path="/about" element={<About />} />
+            <Route path="/students" element={<StudentCRUD />} />
             <Route path="*" element={<NotFound />} />
         </Routes>
     </BrowserRouter>
