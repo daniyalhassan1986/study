@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 
 const SESSION_KEY = 'students_data'
 
@@ -15,7 +15,7 @@ const saveStudentsToSession = (students) => {
   sessionStorage.setItem(SESSION_KEY, JSON.stringify(students))
 }
 
-const emptyForm = { name: '', studentClass: '', age: '' }
+const emptyForm = { name: '', studentClass: '', age: '', image: '' }
 
 const StudentCRUD = () => {
   const [students, setStudents] = useState(getStudentsFromSession)
@@ -23,6 +23,7 @@ const StudentCRUD = () => {
   const [editId, setEditId] = useState(null)
   const [errors, setErrors] = useState({})
   const [searchTerm, setSearchTerm] = useState('')
+  const fileInputRef = useRef(null)
 
   useEffect(() => {
     saveStudentsToSession(students)
@@ -35,6 +36,14 @@ const StudentCRUD = () => {
     if (!form.age || isNaN(form.age) || Number(form.age) <= 0 || Number(form.age) > 100)
       newErrors.age = 'Age must be a valid number between 1 and 100'
     return newErrors
+  }
+
+  const handleImageChange = (e) => {
+    const file = e.target.files[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = (ev) => setForm((prev) => ({ ...prev, image: ev.target.result }))
+    reader.readAsDataURL(file)
   }
 
   const handleSubmit = (e) => {
@@ -50,7 +59,13 @@ const StudentCRUD = () => {
       setStudents((prev) =>
         prev.map((s) =>
           s.id === editId
-            ? { ...s, name: form.name.trim(), studentClass: form.studentClass.trim(), age: Number(form.age) }
+            ? {
+                ...s,
+                name: form.name.trim(),
+                studentClass: form.studentClass.trim(),
+                age: Number(form.age),
+                image: form.image,
+              }
             : s
         )
       )
@@ -61,16 +76,24 @@ const StudentCRUD = () => {
         name: form.name.trim(),
         studentClass: form.studentClass.trim(),
         age: Number(form.age),
+        image: form.image,
       }
       setStudents((prev) => [...prev, newStudent])
     }
     setForm(emptyForm)
+    if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
   const handleEdit = (student) => {
     setEditId(student.id)
-    setForm({ name: student.name, studentClass: student.studentClass, age: String(student.age) })
+    setForm({
+      name: student.name,
+      studentClass: student.studentClass,
+      age: String(student.age),
+      image: student.image || '',
+    })
     setErrors({})
+    if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
   const handleDelete = (id) => {
@@ -79,6 +102,7 @@ const StudentCRUD = () => {
       if (editId === id) {
         setEditId(null)
         setForm(emptyForm)
+        if (fileInputRef.current) fileInputRef.current.value = ''
       }
     }
   }
@@ -87,6 +111,7 @@ const StudentCRUD = () => {
     setEditId(null)
     setForm(emptyForm)
     setErrors({})
+    if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
   const filteredStudents = students.filter(
@@ -97,7 +122,7 @@ const StudentCRUD = () => {
 
   return (
     <div className="min-h-screen bg-gray-900 text-white p-6">
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-5xl mx-auto">
         <h1 className="text-3xl font-bold mb-6 text-center text-blue-400">Student Records (Session Storage)</h1>
 
         {/* Form */}
@@ -105,7 +130,7 @@ const StudentCRUD = () => {
           <h2 className="text-xl font-semibold mb-4 text-blue-300">
             {editId !== null ? 'Edit Student' : 'Add New Student'}
           </h2>
-          <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm text-gray-300 mb-1">Name</label>
               <input
@@ -144,7 +169,33 @@ const StudentCRUD = () => {
               {errors.age && <p className="text-red-400 text-xs mt-1">{errors.age}</p>}
             </div>
 
-            <div className="md:col-span-3 flex gap-3 mt-2">
+            <div>
+              <label className="block text-sm text-gray-300 mb-1">Profile Image</label>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleImageChange}
+                className="w-full bg-gray-700 text-white rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 file:mr-3 file:py-1 file:px-3 file:rounded file:border-0 file:bg-blue-600 file:text-white file:text-sm hover:file:bg-blue-700 cursor-pointer"
+              />
+              {form.image && (
+                <div className="mt-2 flex items-center gap-2">
+                  <img src={form.image} alt="Preview" className="w-12 h-12 rounded-full object-cover border-2 border-blue-500" />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setForm((prev) => ({ ...prev, image: '' }))
+                      if (fileInputRef.current) fileInputRef.current.value = ''
+                    }}
+                    className="text-xs text-red-400 hover:text-red-300"
+                  >
+                    Remove
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <div className="md:col-span-2 flex gap-3 mt-2">
               <button
                 type="submit"
                 className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded-lg transition-colors"
@@ -191,11 +242,12 @@ const StudentCRUD = () => {
             <table className="w-full text-left">
               <thead className="bg-gray-700 text-gray-300 uppercase text-xs">
                 <tr>
-                  <th className="px-6 py-3">#</th>
-                  <th className="px-6 py-3">Name</th>
-                  <th className="px-6 py-3">Class</th>
-                  <th className="px-6 py-3">Age</th>
-                  <th className="px-6 py-3 text-right">Actions</th>
+                  <th className="px-4 py-3">#</th>
+                  <th className="px-4 py-3">Photo</th>
+                  <th className="px-4 py-3">Name</th>
+                  <th className="px-4 py-3">Class</th>
+                  <th className="px-4 py-3">Age</th>
+                  <th className="px-4 py-3 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -206,11 +258,24 @@ const StudentCRUD = () => {
                       editId === student.id ? 'bg-blue-900/30' : 'hover:bg-gray-750'
                     }`}
                   >
-                    <td className="px-6 py-4 text-gray-400">{index + 1}</td>
-                    <td className="px-6 py-4 font-medium">{student.name}</td>
-                    <td className="px-6 py-4 text-gray-300">{student.studentClass}</td>
-                    <td className="px-6 py-4 text-gray-300">{student.age}</td>
-                    <td className="px-6 py-4 text-right">
+                    <td className="px-4 py-4 text-gray-400">{index + 1}</td>
+                    <td className="px-4 py-4">
+                      {student.image ? (
+                        <img
+                          src={student.image}
+                          alt={student.name}
+                          className="w-10 h-10 rounded-full object-cover border-2 border-gray-600"
+                        />
+                      ) : (
+                        <div className="w-10 h-10 rounded-full bg-gray-600 flex items-center justify-center text-gray-400 text-sm font-bold">
+                          {student.name.charAt(0).toUpperCase()}
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-4 py-4 font-medium">{student.name}</td>
+                    <td className="px-4 py-4 text-gray-300">{student.studentClass}</td>
+                    <td className="px-4 py-4 text-gray-300">{student.age}</td>
+                    <td className="px-4 py-4 text-right">
                       <button
                         onClick={() => handleEdit(student)}
                         className="bg-yellow-600 hover:bg-yellow-500 text-white text-sm font-semibold py-1 px-4 rounded-lg mr-2 transition-colors"
